@@ -617,24 +617,43 @@
       }
 
       const slice = 360 / options.length;
+      const wheelStartAngle = getWheelStartAngle(slice);
       const gradient = options.map((option, index) => {
         const start = index * slice;
         const end = (index + 1) * slice;
         return `${getSliceColor(index, options.length)} ${start}deg ${end}deg`;
       }).join(", ");
-      wheel.style.background = `conic-gradient(from -90deg, ${gradient})`;
+      wheel.style.background = `conic-gradient(from ${wheelStartAngle}deg, ${gradient})`;
 
       options.forEach((option, index) => {
         const label = document.createElement("span");
         label.className = "slice-label";
         label.textContent = option;
-        label.style.setProperty("--angle", `${getSliceCenterAngle(index, slice)}deg`);
+        label.style.setProperty("--angle", `${getLabelAngle(index, slice)}deg`);
         wheel.append(label);
       });
     }
 
+    function getLabelAngle(index, slice) {
+      return index * slice;
+    }
+
     function getSliceCenterAngle(index, slice) {
-      return index * slice + slice / 2 - 90;
+      return index * slice - 90;
+    }
+
+    function getWheelStartAngle(slice) {
+      return -90 - slice / 2;
+    }
+
+    function getSelectedIndex() {
+      if (!options.length) return -1;
+      const slice = 360 / options.length;
+      const pointerAngle = -90;
+      const currentRotation = ((rotation % 360) + 360) % 360;
+      const relativeAngle =
+        ((pointerAngle - currentRotation - getWheelStartAngle(slice)) % 360 + 360) % 360;
+      return Math.floor(relativeAngle / slice) % options.length;
     }
 
     function getSliceColor(index, total) {
@@ -698,7 +717,6 @@
         index = (index + 1) % options.length;
       }
 
-      lastIndex = index;
       spinning = true;
       render();
       choiceText.textContent = "กำลังหมุน";
@@ -711,14 +729,19 @@
 
       const slice = 360 / options.length;
       const targetCenter = getSliceCenterAngle(index, slice);
+      const pointerAngle = -90;
       const rounds = 9 + Math.floor(Math.random() * 4);
-      const targetRotation = (360 - targetCenter) % 360;
-      rotation += rounds * 360 + targetRotation;
+      const currentRotation = ((rotation % 360) + 360) % 360;
+      const desiredRotation = ((pointerAngle - targetCenter) % 360 + 360) % 360;
+      const deltaRotation = (desiredRotation - currentRotation + 360) % 360;
+      rotation += rounds * 360 + deltaRotation;
       wheel.style.setProperty("--rotation", `${rotation}deg`);
 
       window.setTimeout(() => {
         spinning = false;
-        choiceText.textContent = options[index];
+        const selectedIndex = getSelectedIndex();
+        lastIndex = selectedIndex;
+        choiceText.textContent = options[selectedIndex] ?? "เพิ่มเมนูก่อน";
         choiceText.classList.remove("loading");
         wheel.classList.remove("is-spinning");
         hub.classList.remove("is-spinning");
