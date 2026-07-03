@@ -628,9 +628,13 @@
         const label = document.createElement("span");
         label.className = "slice-label";
         label.textContent = option;
-        label.style.setProperty("--angle", `${index * slice + slice / 2 - 90}deg`);
+        label.style.setProperty("--angle", `${getSliceCenterAngle(index, slice)}deg`);
         wheel.append(label);
       });
+    }
+
+    function getSliceCenterAngle(index, slice) {
+      return index * slice + slice / 2 - 90;
     }
 
     function getSliceColor(index, total) {
@@ -706,9 +710,10 @@
       window.requestAnimationFrame(() => drawButton.classList.add("spin"));
 
       const slice = 360 / options.length;
-      const targetCenter = index * slice + slice / 2;
+      const targetCenter = getSliceCenterAngle(index, slice);
       const rounds = 9 + Math.floor(Math.random() * 4);
-      rotation += rounds * 360 + (360 - targetCenter);
+      const targetRotation = (360 - targetCenter) % 360;
+      rotation += rounds * 360 + targetRotation;
       wheel.style.setProperty("--rotation", `${rotation}deg`);
 
       window.setTimeout(() => {
