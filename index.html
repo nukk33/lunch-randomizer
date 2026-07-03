@@ -1,0 +1,744 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>สุ่มอาหารกลางวัน</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #202124;
+      --muted: #70768a;
+      --line: #e4e8f3;
+      --paper: #fbfdff;
+      --surface: #ffffff;
+      --green: #79bfe8;
+      --green-deep: #5aa5d4;
+      --tomato: #f5a6bd;
+      --gold: #ffd6e5;
+      --sky: #dff3ff;
+      --shadow: 0 20px 60px rgba(93, 125, 168, 0.16);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 16% 8%, rgba(255, 214, 229, 0.76), transparent 30%),
+        radial-gradient(circle at 88% 18%, rgba(190, 230, 255, 0.76), transparent 32%),
+        linear-gradient(180deg, #fff4fa 0%, #edf8ff 100%);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .phone {
+      width: min(100%, 430px);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 18px;
+      display: flex;
+      align-items: stretch;
+    }
+
+    .app {
+      width: 100%;
+      min-height: calc(100vh - 36px);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 20px 16px 18px;
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      border-radius: 28px;
+      background: rgba(251, 253, 255, 0.9);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .top {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .badge {
+      width: 56px;
+      height: 56px;
+      display: grid;
+      place-items: center;
+      border-radius: 18px;
+      background: linear-gradient(145deg, #e3f5ff, #ffddeb);
+      box-shadow: inset 0 -8px 0 rgba(93, 125, 168, 0.06);
+      font-size: 32px;
+    }
+
+    .wheel-panel {
+      position: relative;
+      display: grid;
+      justify-items: center;
+      gap: 12px;
+      padding: 10px 4px 0;
+    }
+
+    .wheel-wrap {
+      display: grid;
+      place-items: center;
+      position: relative;
+      width: min(100%, 284px);
+      aspect-ratio: 1;
+      filter: drop-shadow(0 18px 30px rgba(32, 33, 36, 0.16));
+    }
+
+    .pointer {
+      position: absolute;
+      top: -2px;
+      left: 50%;
+      z-index: 4;
+      width: 30px;
+      height: 39px;
+      transform: translateX(-50%);
+      border-radius: 0 0 18px 18px;
+      background: #f28fb0;
+      clip-path: polygon(50% 100%, 0 0, 100% 0);
+      box-shadow: 0 8px 18px rgba(236, 93, 66, 0.24);
+    }
+
+    .wheel {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border: 8px solid #fff;
+      border-radius: 999px;
+      background: #f7d66c;
+      overflow: hidden;
+      transform: rotate(var(--rotation, 0deg));
+      transition: transform 7000ms cubic-bezier(0.08, 0.76, 0.06, 1);
+      will-change: transform;
+    }
+
+    .wheel.is-spinning {
+      animation: wheelGlow 900ms ease-in-out infinite alternate;
+    }
+
+    @keyframes wheelGlow {
+      from {
+        box-shadow: 0 0 0 rgba(243, 159, 189, 0);
+        filter: saturate(1);
+      }
+
+      to {
+        box-shadow: 0 0 36px rgba(140, 207, 240, 0.48), 0 0 54px rgba(243, 159, 189, 0.28);
+        filter: saturate(1.12);
+      }
+    }
+
+    .wheel::before {
+      content: "";
+      position: absolute;
+      inset: 18%;
+      z-index: 2;
+      border-radius: inherit;
+      background: rgba(255, 255, 255, 0.24);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+      pointer-events: none;
+    }
+
+    .hub {
+      position: absolute;
+      z-index: 3;
+      display: grid;
+      place-items: center;
+      width: 72px;
+      height: 72px;
+      border: 7px solid rgba(255, 255, 255, 0.9);
+      border-radius: 999px;
+      background: linear-gradient(145deg, #8bd2f4, #f4aac4);
+      color: #fff;
+      font-size: 33px;
+      box-shadow: 0 10px 24px rgba(32, 33, 36, 0.18);
+      pointer-events: none;
+    }
+
+    .hub.is-spinning {
+      animation: hubBeat 700ms ease-in-out infinite;
+    }
+
+    @keyframes hubBeat {
+      0%, 100% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.08);
+      }
+    }
+
+    .slice-label {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      z-index: 1;
+      width: 33%;
+      min-height: 25px;
+      display: grid;
+      place-items: center;
+      padding: 3px 6px;
+      border-radius: 999px;
+      color: #1f2328;
+      background: rgba(255, 255, 255, 0.84);
+      font-size: clamp(10px, 2.9vw, 13px);
+      font-weight: 800;
+      line-height: 1.12;
+      text-align: center;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+      transform-origin: center;
+      transform:
+        translate(-50%, -50%)
+        rotate(var(--angle))
+        translateY(-86px)
+        rotate(-90deg);
+      box-shadow: 0 5px 12px rgba(32, 33, 36, 0.11);
+    }
+
+    .result {
+      width: 100%;
+      min-height: 70px;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 2px;
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #45bdf2, #ff74aa);
+      color: white;
+      overflow: hidden;
+      box-shadow: 0 14px 28px rgba(255, 116, 170, 0.28);
+    }
+
+    .result::before,
+    .result::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .result::before {
+      width: 86px;
+      height: 86px;
+      right: -34px;
+      top: -36px;
+    }
+
+    .result::after {
+      width: 72px;
+      height: 72px;
+      left: -24px;
+      bottom: -34px;
+    }
+
+    .choice {
+      position: relative;
+      z-index: 1;
+      margin: 0;
+      min-height: 30px;
+      font-size: clamp(24px, 7vw, 32px);
+      line-height: 1.12;
+      font-weight: 800;
+      text-align: center;
+      overflow-wrap: anywhere;
+      text-shadow: 0 3px 12px rgba(69, 93, 130, 0.36);
+    }
+
+    .choice.loading::after {
+      content: "";
+      display: inline-block;
+      width: 1.2em;
+      text-align: left;
+      animation: dots 900ms steps(4, end) infinite;
+    }
+
+    @keyframes dots {
+      0% { content: ""; }
+      25% { content: "."; }
+      50% { content: ".."; }
+      75%, 100% { content: "..."; }
+    }
+
+    .count {
+      position: relative;
+      z-index: 1;
+      margin: 0;
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .draw {
+      width: min(200px, calc(100% - 48px));
+      min-height: 58px;
+      align-self: center;
+      border: 0;
+      border-radius: 18px;
+      color: #ffffff;
+      background: #111111;
+      box-shadow: 0 12px 26px rgba(17, 17, 17, 0.24);
+      font-size: 20px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 160ms ease, filter 160ms ease;
+    }
+
+    .draw:active,
+    .icon-button:active {
+      transform: scale(0.97);
+    }
+
+    .draw.spin {
+      animation: pop 360ms ease;
+    }
+
+    .draw.is-spinning {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .draw.is-spinning::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(100deg, transparent 0%, rgba(255, 255, 255, 0.42) 45%, transparent 70%);
+      transform: translateX(-120%);
+      animation: buttonSweep 1200ms ease-in-out infinite;
+    }
+
+    @keyframes buttonSweep {
+      to {
+        transform: translateX(120%);
+      }
+    }
+
+    .draw:disabled {
+      opacity: 0.68;
+      cursor: wait;
+    }
+
+    input:disabled,
+    .icon-button:disabled,
+    .remove:disabled {
+      opacity: 0.58;
+      cursor: wait;
+    }
+
+    @keyframes pop {
+      0% { transform: scale(1); }
+      45% { transform: scale(0.96); }
+      100% { transform: scale(1); }
+    }
+
+    .entry {
+      display: grid;
+      grid-template-columns: 1fr 50px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .entry input {
+      min-width: 0;
+      height: 50px;
+      padding: 0 15px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--surface);
+      color: var(--ink);
+      outline: none;
+    }
+
+    .entry input:focus {
+      border-color: #8ccff0;
+      box-shadow: 0 0 0 4px rgba(140, 207, 240, 0.2);
+    }
+
+    .icon-button {
+      width: 50px;
+      height: 50px;
+      border: 0;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(145deg, #ffd8e7, #cfeeff);
+      color: #35526b;
+      cursor: pointer;
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1;
+      transition: transform 160ms ease;
+    }
+
+    .list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+      overflow: auto;
+      align-items: start;
+    }
+
+    .clear-button {
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid #e7d7df;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.82);
+      color: #7a4358;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 160ms ease, background 160ms ease;
+    }
+
+    .clear-button:active {
+      transform: scale(0.98);
+    }
+
+    .clear-button:disabled {
+      opacity: 0.5;
+      cursor: wait;
+    }
+
+    .item {
+      display: grid;
+      grid-template-columns: 30px 1fr 34px;
+      gap: 8px;
+      align-items: center;
+      min-height: 48px;
+      padding: 6px 7px 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .item-icon {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: #f2f8ff;
+      font-size: 18px;
+    }
+
+    .item span:nth-child(2) {
+      min-width: 0;
+      font-weight: 650;
+      overflow-wrap: anywhere;
+      line-height: 1.2;
+    }
+
+    .remove {
+      width: 34px;
+      height: 34px;
+      border: 0;
+      border-radius: 14px;
+      background: #f7f2fa;
+      color: var(--muted);
+      font-size: 24px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .empty {
+      margin: 4px 0 0;
+      color: var(--muted);
+      text-align: center;
+      font-size: 14px;
+    }
+
+    @media (max-width: 360px) {
+      .phone {
+        padding: 10px;
+      }
+
+      .app {
+        min-height: calc(100vh - 20px);
+        padding: 18px 12px 14px;
+        border-radius: 24px;
+      }
+
+      h1 {
+        font-size: 25px;
+      }
+
+      .badge {
+        width: 50px;
+        height: 50px;
+        border-radius: 16px;
+      }
+
+      .slice-label {
+        font-size: 10px;
+        transform:
+          translate(-50%, -50%)
+          rotate(var(--angle))
+          translateY(-80px)
+          rotate(-90deg);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="phone">
+    <section class="app" aria-label="สุ่มอาหารกลางวัน">
+      <header class="top">
+        <h1>มาสุ่ม...<br>สุ่มกัน</h1>
+        <div class="badge" aria-hidden="true">🍱</div>
+      </header>
+
+      <section class="wheel-panel" aria-label="วงล้อสุ่มอาหาร">
+        <div class="wheel-wrap">
+          <div class="pointer" aria-hidden="true"></div>
+          <div class="wheel" id="wheel" aria-hidden="true"></div>
+          <div class="hub" aria-hidden="true">🍽️</div>
+        </div>
+        <div class="result" aria-live="polite">
+          <p class="choice" id="choiceText">พร้อมสุ่มแล้ว</p>
+          <p class="count" id="choiceCount"></p>
+        </div>
+      </section>
+
+      <button class="draw" id="drawButton" type="button">สุ่ม</button>
+
+      <form class="entry" id="choiceForm">
+        <input id="choiceInput" type="text" inputmode="text" autocomplete="off" placeholder="เพิ่มเมนู" aria-label="เพิ่มเมนู">
+        <button class="icon-button" type="submit" title="เพิ่มเมนู" aria-label="เพิ่มเมนู">+</button>
+      </form>
+
+      <ul class="list" id="choiceList" aria-label="ตัวเลือกอาหารกลางวัน"></ul>
+      <button class="clear-button" id="clearButton" type="button">ล้างทั้งหมด</button>
+      <p class="empty" id="emptyText" hidden>ยังไม่มีตัวเลือก</p>
+    </section>
+  </main>
+
+  <script>
+    const storageKey = "mobile-lunch-options";
+    const fallbackOptions = [
+      "ข้าวกะเพรา",
+      "ข้าวมันไก่",
+      "ก๋วยเตี๋ยว",
+      "ส้มตำ",
+      "ข้าวหมูทอด",
+      "ราเมน"
+    ];
+    const foodIcons = ["🍛", "🍜", "🍚", "🥗", "🍲", "🥘", "🍱", "🥟"];
+
+    const choiceText = document.querySelector("#choiceText");
+    const choiceCount = document.querySelector("#choiceCount");
+    const choiceList = document.querySelector("#choiceList");
+    const choiceInput = document.querySelector("#choiceInput");
+    const choiceForm = document.querySelector("#choiceForm");
+    const addButton = document.querySelector(".icon-button");
+    const drawButton = document.querySelector("#drawButton");
+    const clearButton = document.querySelector("#clearButton");
+    const emptyText = document.querySelector("#emptyText");
+    const wheel = document.querySelector("#wheel");
+    const hub = document.querySelector(".hub");
+
+    let options = loadOptions();
+    let lastIndex = -1;
+    let rotation = 0;
+    let spinning = false;
+
+    function loadOptions() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey));
+        return Array.isArray(saved) && saved.length ? saved : fallbackOptions;
+      } catch {
+        return fallbackOptions;
+      }
+    }
+
+    function saveOptions() {
+      localStorage.setItem(storageKey, JSON.stringify(options));
+    }
+
+    function render() {
+      choiceList.innerHTML = "";
+      renderWheel();
+      options.forEach((option, index) => {
+        const item = document.createElement("li");
+        item.className = "item";
+
+        const icon = document.createElement("span");
+        icon.className = "item-icon";
+        icon.textContent = foodIcons[index % foodIcons.length];
+        icon.setAttribute("aria-hidden", "true");
+
+        const label = document.createElement("span");
+        label.textContent = option;
+
+        const remove = document.createElement("button");
+        remove.className = "remove";
+        remove.type = "button";
+        remove.textContent = "×";
+        remove.title = `ลบ ${option}`;
+        remove.setAttribute("aria-label", `ลบ ${option}`);
+        remove.addEventListener("click", () => removeOption(index));
+
+        item.append(icon, label, remove);
+        choiceList.append(item);
+      });
+
+      choiceCount.textContent = `${options.length} ตัวเลือก`;
+      emptyText.hidden = options.length > 0;
+      drawButton.disabled = options.length === 0 || spinning;
+      clearButton.disabled = options.length === 0 || spinning;
+      choiceInput.disabled = spinning;
+      addButton.disabled = spinning;
+    }
+
+    function renderWheel() {
+      wheel.innerHTML = "";
+
+      if (!options.length) {
+        wheel.style.background = "#eef0f2";
+        return;
+      }
+
+      const slice = 360 / options.length;
+      const gradient = options.map((option, index) => {
+        const start = index * slice;
+        const end = (index + 1) * slice;
+        return `${getSliceColor(index, options.length)} ${start}deg ${end}deg`;
+      }).join(", ");
+      wheel.style.background = `conic-gradient(from -90deg, ${gradient})`;
+
+      options.forEach((option, index) => {
+        const label = document.createElement("span");
+        label.className = "slice-label";
+        label.textContent = option;
+        label.style.setProperty("--angle", `${index * slice + slice / 2 - 90}deg`);
+        wheel.append(label);
+      });
+    }
+
+    function getSliceColor(index, total) {
+      const hue = (205 + (index * 360 / total)) % 360;
+      const saturation = index % 2 === 0 ? 82 : 74;
+      const lightness = index % 3 === 0 ? 84 : 88;
+      return `hsl(${hue}deg ${saturation}% ${lightness}%)`;
+    }
+
+    function addOption(value) {
+      if (spinning) return;
+      const option = value.trim();
+      if (!option) return;
+      options = [option, ...options.filter((item) => item !== option)];
+      choiceInput.value = "";
+      resetWheelMessage("พร้อมสุ่มแล้ว");
+      saveOptions();
+      render();
+    }
+
+    function removeOption(index) {
+      if (spinning) return;
+      options.splice(index, 1);
+      if (lastIndex === index) {
+        lastIndex = -1;
+        resetWheelMessage(options.length ? "พร้อมสุ่มแล้ว" : "เพิ่มเมนูก่อน");
+      }
+      saveOptions();
+      render();
+    }
+
+    function clearOptions() {
+      if (spinning || !options.length) return;
+      options = [];
+      lastIndex = -1;
+      rotation = 0;
+      choiceInput.value = "";
+      choiceText.classList.remove("loading");
+      wheel.classList.remove("is-spinning");
+      hub.classList.remove("is-spinning");
+      drawButton.classList.remove("is-spinning");
+      localStorage.removeItem(storageKey);
+      resetWheelMessage("เพิ่มเมนูก่อน");
+      render();
+    }
+
+    function resetWheelMessage(message) {
+      choiceText.textContent = message;
+      wheel.style.transition = "none";
+      wheel.style.setProperty("--rotation", `${rotation}deg`);
+      window.requestAnimationFrame(() => {
+        wheel.style.transition = "";
+      });
+    }
+
+    function drawOption() {
+      if (!options.length || spinning) return;
+
+      let index = Math.floor(Math.random() * options.length);
+      if (options.length > 1 && index === lastIndex) {
+        index = (index + 1) % options.length;
+      }
+
+      lastIndex = index;
+      spinning = true;
+      render();
+      choiceText.textContent = "กำลังหมุน";
+      choiceText.classList.add("loading");
+      wheel.classList.add("is-spinning");
+      hub.classList.add("is-spinning");
+      drawButton.classList.add("is-spinning");
+      drawButton.classList.remove("spin");
+      window.requestAnimationFrame(() => drawButton.classList.add("spin"));
+
+      const slice = 360 / options.length;
+      const targetCenter = index * slice + slice / 2;
+      const rounds = 9 + Math.floor(Math.random() * 4);
+      rotation += rounds * 360 + (360 - targetCenter);
+      wheel.style.setProperty("--rotation", `${rotation}deg`);
+
+      window.setTimeout(() => {
+        spinning = false;
+        choiceText.textContent = options[index];
+        choiceText.classList.remove("loading");
+        wheel.classList.remove("is-spinning");
+        hub.classList.remove("is-spinning");
+        drawButton.classList.remove("is-spinning");
+        render();
+      }, 7000);
+    }
+
+    choiceForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      addOption(choiceInput.value);
+    });
+
+    clearButton.addEventListener("click", clearOptions);
+    drawButton.addEventListener("click", drawOption);
+    drawButton.addEventListener("animationend", () => drawButton.classList.remove("spin"));
+
+    render();
+  </script>
+</body>
+</html>
