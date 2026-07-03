@@ -520,7 +520,7 @@
           <div class="hub" aria-hidden="true">🍽️</div>
         </div>
         <div class="result" aria-live="polite">
-          <p class="choice" id="choiceText">พร้อมสุ่มแล้ว</p>
+          <p class="choice" id="choiceText">เพิ่มเมนูก่อน</p>
           <p class="count" id="choiceCount"></p>
         </div>
       </section>
@@ -540,14 +540,7 @@
 
   <script>
     const storageKey = "mobile-lunch-options";
-    const fallbackOptions = [
-      "ข้าวกะเพรา",
-      "ข้าวมันไก่",
-      "ก๋วยเตี๋ยว",
-      "ส้มตำ",
-      "ข้าวหมูทอด",
-      "ราเมน"
-    ];
+    const fallbackOptions = [];
     const foodIcons = ["🍛", "🍜", "🍚", "🥗", "🍲", "🥘", "🍱", "🥟"];
 
     const choiceText = document.querySelector("#choiceText");
@@ -570,7 +563,7 @@
     function loadOptions() {
       try {
         const saved = JSON.parse(localStorage.getItem(storageKey));
-        return Array.isArray(saved) && saved.length ? saved : fallbackOptions;
+        return Array.isArray(saved) ? saved : fallbackOptions;
       } catch {
         return fallbackOptions;
       }
